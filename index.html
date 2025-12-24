@@ -137,13 +137,11 @@
         <div class="receipt" id="receiptOutput">
             <!-- AI生成的内容会填到这里 -->
         </div>
-    </div>
-
-    <script>
+   <script>
         // ==========================================
-        // ⚠️ 重要：请把你的 API KEY 填在下面引号里！
+        // ⚠️ 把你的 Key 填在这里 (保留双引号)
         // ==========================================
-        const API_KEY = "AIzaSyBZ0WGLhXK8W6DKFX_G1N3krFf53oXjVP8"; 
+        const API_KEY = "这里填入你的AIza开头的API_KEY"; 
         // ==========================================
 
         async function generateReport() {
@@ -155,53 +153,20 @@
 
             if (!birth) { alert("请输入出生日期"); return; }
 
-            // UI 状态切换
+            // 1. 简单的状态切换
             btn.disabled = true;
             loading.style.display = 'block';
             output.classList.remove('show');
 
-            // 你的 System Prompt (中医版)
-            const systemPrompt = `
-                你是一个中医养生与节气分析算法终端。请根据用户生日和状态，生成一份热敏小票风格的报告。
-                
-                当前时间：${new Date().toLocaleDateString()}
-                用户输入：生日 ${birth}，状态：${status || "无特殊说明"}。
-
-                请严格按照以下格式输出（不要用Markdown代码块符号，直接输出文本内容）：
-                
-                --------------------------------
-                      天地算法实验室
-                   ALGORITHM OF NATURE
-                --------------------------------
-                终端ID: #TCM-CORE-${Math.floor(Math.random()*99)}
-                时空坐标: [当前日期]
-                --------------------------------
-                [环境气象数据]
-                当前节气: [根据当前日期判断]
-                --------------------------------
-                [生物机体检测]
-                样本生日: ${birth}
-                体质判定: [根据生日推测]
-                --------------------------------
-                [系统维护方案]
-                >>> 燃料填充 (Dietary)
-                宜: [推荐食材]
-                忌: [忌口]
-
-                >>> 防御层配置 (Apparel)
-                重点防护: [部位]
-                [具体建议]
-                --------------------------------
-                [算法结语]
-                [一句治愈的话]
-                --------------------------------
-                      保留票根 · 顺时而动
-                |||||||||||||||||||||||||||||||
-            `;
+            // 2. 你的提示词
+            const systemPrompt = "你是一个中医养生与节气分析算法终端。请根据用户生日和状态，生成一份热敏小票风格的报告。\n\n请严格按照以下格式输出：\n--------------------------------\n      天地算法实验室\n   ALGORITHM OF NATURE\n--------------------------------\n终端ID: #TCM-CORE-01\n时空坐标: [当前日期]\n--------------------------------\n[环境气象数据]\n当前节气: [根据日期判断]\n--------------------------------\n[生物机体检测]\n样本生日: " + birth + "\n当前状态: " + status + "\n--------------------------------\n[系统维护方案]\n>>> 燃料填充 (Dietary)\n宜: [推荐食材]\n忌: [忌口]\n\n>>> 防御层配置 (Apparel)\n重点防护: [部位]\n[具体建议]\n--------------------------------\n[算法结语]\n[一句治愈的话]\n--------------------------------\n      保留票根 · 顺时而动\n|||||||||||||||||||||||||||||||";
 
             try {
-                // 调用 Google Gemini API
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`, {
+                // ✅ 修改点：使用最稳的拼接方式，防止符号错误
+                // 使用 gemini-2.5-flash (你截图里有的模型)
+                var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + API_KEY;
+                
+                const response = await fetch(url, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -209,25 +174,26 @@
                     })
                 });
 
-                const data = await response.json();
-                
-                if(data.candidates && data.candidates[0].content) {
-                    const text = data.candidates[0].content.parts[0].text;
-                    // 显示结果
-                    output.innerText = text;
-                    output.classList.add('show');
-                } else {
-                    alert("算法连接失败，请检查网络或Key");
+                if (!response.ok) {
+                    const errData = await response.json();
+                    console.error("API报错:", errData);
+                    // 如果 flash 不行，代码自动回退报错，让我们知道
+                    throw new Error("API请求失败: " + (errData.error?.message || response.status));
                 }
+
+                const data = await response.json();
+                const text = data.candidates[0].content.parts[0].text;
+                
+                // 显示结果
+                output.innerText = text;
+                output.classList.add('show');
 
             } catch (error) {
                 console.error(error);
-                alert("发生错误，请确保你可以访问 Google 服务");
+                alert("出错啦！请截图发给我：\n" + error.message);
             } finally {
                 btn.disabled = false;
                 loading.style.display = 'none';
             }
         }
     </script>
-</body>
-</html>
